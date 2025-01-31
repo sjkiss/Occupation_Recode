@@ -319,7 +319,7 @@ ces21 %>%
 #   write_dta(path=here("Data/ces2019_phone_noc.dta"))
 # #Export Ces19phone Rdata
 ces19phone %>%
-  save(file=here("Data/ces2019_phone_noc.RData"))
+  saveRDS(file=here("Data/ces2019_phone_noc.RDs"))
 # 
 # #Export CES19phone SPSS
 # ces19phone %>%
@@ -330,16 +330,18 @@ ces19phone %>%
 #   write_dta(path=here("Data/ces2019_web_noc.dta"))
 # #Export Ces19phone Rdata
 ces19web %>%
-  save(file=here("Data/ces2019_web_noc.RData"))
+  saveRDS(file=here("Data/ces2019_web_noc.RDs"))
 
 # #Export Ces21 Stata
 # ces21 %>% 
 #   write_dta(path=here("Data/ces2021_web.dta"))
 # #Export CES21 Rdata
 ces21 %>%
-  save(file=here("Data/ces2021_noc.RData"))
+  saveRDS(file=here("Data/ces2021_noc.RDs"))
+
 # #Export CES21 SPSS
 # ces21 %>% 
 #   write_sav(path=here("Data/ces2021_web_noc.sav"))
+
 
 

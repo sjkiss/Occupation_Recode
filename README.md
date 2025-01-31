@@ -14,8 +14,8 @@ The data folder includes:
 
 The R Scripts are actually quite simple. 
 
-`1_data_import.R` Imports all the files 
-`1_problem_with_encodings.R` is a beast. Somewhere in the 2019 Web stata file from the CES is a botched character encoding that can cause hellish problems. Be wary. But the code in there is useful.
-`2_get_NOC_codes.R` and `3_get_NOC_codes.R` are I think the same thing. One day I will check that out. They scrape the NOC codes and the sample job titles for each NOC codes.
-`3_get_NOC_codes.R` and `3_get_NOC_codes_descriptions.R` might also be equivalent.
-`2_merge_diagnose_execute.R` imports the coded occupations file, and merges it with each CES data set and runs some tests and then spits out `.rdata`, `.sav` and `.dta` files.
+1. `1_data_import.R` Imports all the files 
+2. `1_problem_with_encodings.R` is a beast. Somewhere in the 2019 Web stata file from the CES is a botched character encoding that can cause hellish problems. Be wary. But the code in there is useful.
+3. `2_get_NOC_codes.R` and `3_get_NOC_codes.R` are I think the same thing. One day I will check that out. They scrape the NOC codes and the sample job titles for each NOC codes.
+4. `3_get_NOC_codes.R` and `3_get_NOC_codes_descriptions.R` might also be equivalent.
+5. `2_merge_diagnose_execute.R` imports the coded occupations file, and merges it with each CES data set and runs some tests and then spits out `.rdata`, `.sav` and `.dta` files.

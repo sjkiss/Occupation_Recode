@@ -7,7 +7,7 @@ library(marginaleffects)
 library(nnet)
 
 # CES_2019_web <- read_dta("Data/ces2019_web_noc.dta")
-# 
+
 # CES_2021 <- read_dta("Data/ces2021_web.dta")
 
 # I have stored these data files in my own personal package that is stored on GitHub. 
@@ -18,7 +18,8 @@ library(nnet)
 CES_2019_web <- ces19web %>% 
   select(pes19_conf_inst1_2, pes19_conf_inst1_1, cps19_issue_handle_1, pes19_conf_inst2_8, 
          pes19_age, cps19_gender, pes19_lang, cps19_province, pes19_votechoice2019,
-         NOC21_5)
+         #Would it be better if we used the NOC21_4 codes? Would we have a bigger sample size?
+         NOC21_5, NOC21_4) 
 
 
 CES_2019_web <- CES_2019_web %>% 
@@ -42,7 +43,7 @@ CES_2019_web <- CES_2019_web %>%
 CES_2021 <- ces21 %>% 
   select(pes21_conf_inst1_2, pes21_conf_inst1_1, cps21_issue_handle_1, pes21_conf_inst2_6,
          Age, cps21_genderid, Q_Language, prov, cps21_votechoice,
-         NOC21_5)
+         NOC21_5, NOC21_4)
 
 
 CES_2021 <- CES_2021 %>%  
@@ -146,7 +147,8 @@ as.data.frame() %>%
 
 structual_stability <- multinom(Vote_Choice ~ stability*Structural,
                                 data = CES) 
-
+# Somehow Structural is null
+table(CES$Structural)
 structual_stability %>%  
   stargazer::stargazer(type = "text")
 
@@ -255,8 +257,7 @@ df %>%
   theme(legend.position = "bottom") +
   labs(x = NULL, y = NULL)
 
-
-
+table(CES$Vote_Choice)
   
   
-
+table(CES$Structural)

@@ -106,7 +106,10 @@ ces19phone %>%
 
 
 ## ----import-ces19web----------------------------------------
-ces19web <- read_dta(file=here("Data/2019 Canadian Election Study - Online Survey v1.0.dta"), encoding="latin1")
+#ces19web <- read_dta(file=here("Data/2019 Canadian Election Study - Online Survey v1.0.dta"), encoding="latin1")
+#ces19web <- read_dta(file=here("Data/CES-E-2019-online_F1.dta"), encoding="latin1")
+ces19web <- read_sav(file=here("Data/CES-E-2019-online_F1.sav"), encoding="latin1")
+
 source("1_problem_with_encodings.R")
 
 

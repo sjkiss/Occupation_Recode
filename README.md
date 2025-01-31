@@ -2,9 +2,18 @@
 
 This is the repository for our work coding 2019 and 2021 occupations. 
 
+A lot of this is actually not necessary, it's kind of overkill backup here.
+The really key file for the future is the file `Data/occupations_coded.xlsx`. That's all of Rafael's work. 
+
+For reference I have a much cleaner copy of this that I have made available to Laura Stephenson.
+
+Lastly, I have also embedded the NOC codes into my personal package `cesdata2`. To be honest, there should be a separate repository for the analysis, 
+but we will get there.
+
+
 The data folder includes: 
 
-1. Original stata files from the Canada election studies.  
+1. Original files from the Canada election studies. Note, it is really essential to use the `.sav` file for the 2019 web dataset. The Stata version of that is all messed up because of some corrupted character encodings.
 2. The unique occupations from each of the CES files. 
 3. Files ending in _noc that have been merged with our NOC codes.  These are the files that can be remerged back into any original CES file (2019 phone, 2019 web and 2021). 
 4. Files that scraped the NOC job titles (4-digit and 5-digit) as well as sample job titles and job descriptions (in French and English). 

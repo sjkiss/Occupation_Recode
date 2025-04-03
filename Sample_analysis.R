@@ -140,7 +140,7 @@ across(c(Conf_Province, Conf_Federal, Conf_police),
          Handle_healthcare = case_when(Handle_healthcare == 1 ~ 1,
                                        Handle_healthcare %in% c(2, 3, 4, 5) ~ 0,
                                        Handle_healthcare == 6 ~ NA),
-Right_wing = ifelse(Vote_Choice %in% c(2, 6), 1, ifelse(Vote_Choice %in% c(1, 3, 5), 0, NA))
+Right_wing = ifelse(Vote_Choice %in% c(2, 6), 1, ifelse(Vote_Choice %in% c(1, 3, 4, 5), 0, NA))
 )
 
 CONTROLS <- c("Age", "Gender", "Province", "Year")
@@ -204,13 +204,13 @@ modelsummary::modelsummary(list(Structural_Stability, Structural_Stability_2),
 Structural_Stability_df <- slopes(Structural_Stability,
                 variable = "stability", by = "Structural") %>% 
   mutate(Controls = "No Controls",
-         Model = "Labour Conditions and Longevity") %>% 
+         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
   as.data.frame()
 
 Structural_Stability_2_df <-slopes(Structural_Stability_2,
                                    variable = "stability", by = "Structural") %>% 
   mutate(Controls = "Controls",
-         Model = "Labour Conditions and Longevity") %>% 
+         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
   as.data.frame()
 
 Stability_df <- Stability_df %>% 
@@ -226,32 +226,32 @@ Stability_plot <- Stability_df %>%
                            "stability2Shortages" ~ "Shortage")) %>% 
   ggplot(aes(x = estimate, y = term,  col = Controls,
              shape = Controls, xmin = conf.low, xmax = conf.high)) + 
-  geom_point(position = position_dodge(width = 0.3)) +
-  geom_linerange(position = position_dodge(width = 0.3)) + 
+  geom_point(position = position_dodge(width = 0.4)) +
+  geom_linerange(position = position_dodge(width = 0.4)) + 
   facet_wrap(~Model) + 
   geom_vline(xintercept = 0, lty = 4, col = "red") +
   labs(x = NULL,
        y = NULL) +
   theme_bw() + 
   theme(legend.position = "bottom") +
-  scale_color_manual(values = c("purple", "gold"))
+  scale_color_manual(values = c("orange", "darkblue"))
 
 
 Structural_Stability_plot <- Structural_Stability_df  %>% 
   ggplot(aes(x = estimate, y = Structural, col = Controls,
              shape = Controls, xmin = conf.low, xmax = conf.high)) + 
-  geom_point(position = position_dodge(width = 0.3)) +
-  geom_linerange(position = position_dodge(width = 0.3)) + 
+  geom_point(position = position_dodge(width = 0.4)) +
+  geom_linerange(position = position_dodge(width = 0.4)) + 
   facet_wrap(~Model) + 
   geom_vline(xintercept = 0, lty = 4, col = "red") +
   labs(x = NULL,
        y = NULL) +
   theme_bw() + 
   theme(legend.position = "bottom") +
-  scale_color_manual(values = c("purple", "gold"))
+  scale_color_manual(values = c("orange", "darkblue"))
 
 ggpubr::ggarrange(Stability_plot, Structural_Stability_plot, common.legend = TRUE,
-                  nrow = 2, align = "hv") %>% 
+                  nrow = 2, align = "hv", legend = "bottom") %>% 
   ggsave("plots/ocupation_stability.png", ., width = 6, height = 3)
  
 # Somehow Structural is null

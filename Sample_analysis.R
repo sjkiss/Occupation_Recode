@@ -245,7 +245,7 @@ ggpubr::ggarrange(Stability_plot, Structural_Stability_plot, common.legend = TRU
   ggsave("plots/ocupation_stability.png", ., width = 6, height = 3)
 
 
-Structual_Stability %>% 
+Structural_Stability %>% 
   avg_predictions(by = c("stability", "Structural")) %>% 
   as.data.frame() %>% 
   ggplot(aes(x = estimate, xmin = conf.low, xmax = conf.high,

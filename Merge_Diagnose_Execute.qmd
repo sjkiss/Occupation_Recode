@@ -1,0 +1,444 @@
+---
+title: "NOC Coding"
+editor: visual
+author: 
+  - Simon Kiss, Wilfrid Laurier University
+  - Rafael Campos-Gottardo, McGill University
+format:
+  html:
+    toc: true
+    toc-location: left
+execute: 
+  warning: false
+  message: false
+  results: 'markup'
+---
+
+## Introduction
+
+The purpose of this document is to document how we merged unique job titles drawn from the CES19 phone, CES19 web and CES21 surveys, coded with codes from Canada's National Occupation Classification and to provide some diagnostics of the coding and merging. This was undertaken at the request of the Consortium on Electoral Democracy.
+
+While the initial request was for the CES21 dataset we included the 2019 surveys for two reasons. First, the CES19 surveys are closer in time to the Government of Canada's 2021 National Occupation Classification than the 2016 NOC and, second, because of repeat entries, it was anticipated that this would not necessarily add a lot of extra work. That is to say, there are only so many ways respondents can enter the job title "nurse", "teacher", "carpenter", etc.
+
+## Data Import
+
+First, we imported the three files containing respondents and converted each variable containing occupation and job titles into all lower-case strings. Then we filtered only unique responses. As a result, `Teacher` and `teacher` became a single entry, but spelling mistakes were kept. So, we were left with a spreadsheet containing responses such as `teacher` and `teahcher`, and, obviously `elementary teacher`. This variable was exported into an Excel spreadsheet for coding by several rules (documented elsewhere).
+
+Second, we imported the Excel spreadsheet that contains the unique occupation titles contained in the three surveys and the 4-digit and 5-digit NOC codes assigned by coders. More can and will be said about what the difference between the 4- and 5-digit codes, but basically it is simply that the 5-digit codes are more specific. This is an innovation in the NOC that emerged between 2016 and 2021.
+
+As an example, someone providing the response "Kindergarden Teacher" could be classed with the 5-digit NOC code 41221 - "Elementary School and Kindergarten Teachers". However, someone providing the response "Teacher" could be plausibly be an elementary or a secondary school teacher. The latter has the 5-digit code 41220. But both share the 4-digit code 4122.
+
+But, presumably, researchers could make use of the information in the 4-digit code. As a result, after initially coding each response with a 5-digit code, we re-coded remaining responses with a 4-digit code and then copied the the first 4-digits of the 5-digit codes assigned to those in the first attempt.
+
+As a result, the file with the NOC codes contains the unique, lower-case responses from the three survey files, a 5-digit NOC codes for *some* of the responses that were specific enough, and 4-digit NOC codes for those responses *plus* other responses that were somewhat more vague, but specific enough to assign to a 4-digit code.
+
+```{r}
+#| label: load-libraries
+#| echo: false
+library(readxl)
+library(here)
+library(tidyverse)
+library(dplyr)
+library(haven)
+library(skimr)
+library(labelled)
+library(stringr)
+```
+
+```{r}
+#| label: import-noc
+#| warning: false
+read_excel(path=here("Data/occupations_coded.xlsx")) %>% 
+  #Select only the columns with the unique job title and the NOC codes
+  select("title", "NOC21_4", "NOC21_5") %>% 
+  #Set 0s to be missing in the two columns containing the NOC code
+mutate(across(2:3, function(x) car::Recode(x, "0=NA", as.numeric=T)))->
+  # Store as object noc
+  noc
+
+```
+
+## Diagnostics
+
+First we check to see the maximum number of characters in the 4-digit and 5-digit NOC variables.
+
+```{r}
+#This is a check
+noc %>% 
+  #Convert each NOC variable to character, then count the characters in each entry
+mutate(across(2:3, ~nchar(as.character(.)))) %>% 
+  #check that each has a maximum of 4 and 5 respectively
+  summarize(across(2:3, ~max(., na.rm=T)))
+
+```
+
+Second, we show some basic statistics about the NOC codes assigned.
+
+```{r}
+#| label: diagnostics-noc
+#| echo: false
+
+
+#This slightly modifies skim() to report counts of both missing and valid cases side-by-side
+my_skim <- skim_with(
+  base = sfl(n_missing = n_missing, 
+             valid = n_complete, pct_complete=complete_rate),
+  append = TRUE
+)
+
+#
+noc %>% 
+  #Deal only with the NOC4 and NOC5 variables
+  select(2:3) %>% 
+my_skim() %>% 
+  select(skim_variable:pct_complete)
+```
+
+There were `r nrow(noc)` unique responses to the questions soliciting job titles in the CES19 Phone, CES19 Web and CES21 Web. Of these, we were able to match `r sum(!is.na(noc$NOC21_5))` NOC 5-digit codes and `r sum(!is.na(noc$NOC21_4))` 4-digit codes.
+
+There are several reasons for why we cannot assign an NOC code to each job title.
+
+1.  Many responses were broader than NOC codes permit. For example, some responses have more to do with a person's economic sector or organizational function than their job title. Many respondents might respond "human resources" or "IT" which are hard to assign to an NOC code because it lacks skill level and task information. Other respondents provided something like "self-employed" which is not an occupation.
+
+2.  In the web surveys, respondents who did not report they worked were given the opportunity to record their job title, leading to many responses such as "on medical leave" or "retired police officer". Note, that the survey flow in the 2019 Phone survey was different; respondents were only asked their occupation if they previously answered that they had any paid employment. In the interests of consistency, *we have not assigned any NOC codes to any responses where it is clear the respondent was not working (e.g. "retired teacher", "cashier on sick leave").* Users interested in these variables should consider the possibility that there is still useful information that can be gleaned from searches of the open-ended text responses which we have refrained from coding into the NOC to avoid pre-judging other users' responses.
+
+## Merge With Each File
+
+The next step is to merge back the lower-case, unique job titles *back* into each CES file. We do this in the following way.
+
+### CES2019 Phone
+
+First we import the 2019 CES phone survey.
+
+```{r}
+#| label: import-2019-phone
+ces19phone<-read_dta(here(file="Data/2019 Canadian Election Study - Phone Survey v1.0.dta"),encoding="utf-8")
+
+```
+
+We convert the occupation variable to lower case and merge with the `noc` dataset using the `title` variable in the `noc` dataset and the `p52_lower` variable in the `ces19phone` dataset as the key variables. So, this is taking any respondent in `ces19phone` who provided a job title and adding an NOC21-5 and NOC21-4 variable to that job title from the `noc` spreadsheet we created.
+
+```{r lower-p52-merge}
+
+ces19phone %>% 
+  #Convert p52 to lower case
+  mutate(p52_lower=str_to_lower(p52)) %>% 
+  #merge with noc keying on p52_lower and title
+    left_join(., noc, by=join_by("p52_lower"=="title"))->ces19phone
+```
+
+#### Diagnostics 2019 Phone
+
+In the following, we run some basic diagnostic tests to see how the merge funtioned. First, we wanted to see how the survey flow functioned in each survey, specifically, whether people who responded they were not technically employed actually had the opportunity to provide responses. So, first we converted the employment status variable into something useful. Specifically, we coded the employment status variable into a 3-category variable where respondents were either `employed`, `retired` or `other`. We will mirror this for the other surveys as well.
+
+```{r}
+#| label:  employment-ces19phone
+ces19phone %>% 
+  mutate(employment=case_when(
+    #If Q68 is between 0 and 4 employed
+    q68>0 & q68< 4~ "Employed",
+    # If Q68 is between 8 and 12 employed
+    q68> 8 &q68<12~ "Employed",
+    #If Q68 is 4 set Retired
+    q68==4~ "Retired",
+    #All other responses (e.g. student, family caregiver, don't know )
+    # Set to other
+    TRUE ~ "Other"
+  )) %>% 
+  #Set the factor levels for the new employment variable
+  mutate(employment=factor(employment, levels=c("Employed", "Retired", "Other")))->
+  #Save back into ces19phone
+  ces19phone
+#Show results 
+table(ces19phone$employment)
+```
+
+Then we report the valid and missing NOC codes for respondents in the 2019 CES Phone dataset by employment status.
+
+```{r }
+#| label: skim-2019-noc-employment
+
+ces19phone %>% 
+  select(employment, contains("NOC")) %>% 
+  group_by(employment) %>% 
+  my_skim() %>% 
+    select(employment, skim_variable, n_missing:pct_complete) %>% 
+  arrange(employment)
+```
+
+Here we can see the survey flow was explicit: only people who responded they were employed were given the opportunity to respond with an occupation title and so they have no responses for the NOC21-4 and NOC21-5 variables.
+
+We can show the results of the NOC coding here.
+
+```{r}
+#| label: ces19phone-NOC-diagnostics
+set.seed(50)
+ces19phone %>% 
+  select(p52_lower, NOC21_4, NOC21_5) %>% 
+  #This filters to include only those who responded with the following options
+  filter(., str_detect(p52_lower, "carpenter|plumber|camionneur|infirmière|electricien|enseignant|menuisier|plombier|driver|nurse|doctor|teacher|electrician")) %>% 
+  slice_sample(n=50) %>% 
+  print(n=50)
+
+
+```
+
+### CES19 Web
+
+Next we import the CES 19 data file. Note that there were problems with the encodings of accented characters in the original CES 2019 web file. We devised a fix contained in the R script `1_problem_with_encodings.R` and execute it here. So, we are working with the original data file provided by CDEM.
+
+```{r import-ces19web}
+ces19web <- read_sav(file=here("Data/CES-E-2019-online_F1.sav"), encoding="latin1")
+source("1_problem_with_encodings.R")
+```
+
+The repair is evident in this case:
+
+```{r}
+#| label: show-accented-characters-fix
+ces19web %>% 
+  filter(str_detect(pes19_occ_text,"assembleur-m")) %>% 
+  select(cps19_ResponseId, pes19_occ_text)
+```
+
+Then we convert the variable containing the respondent's self-reported job title to lower case and then merge again with `noc`.
+
+```{r}
+#| label: merge-2019-web
+ces19web %>% 
+  mutate(pes19_occ_text_lower=str_to_lower(pes19_occ_text)) %>% 
+  left_join(., noc, join_by("pes19_occ_text_lower"=="title"))->ces19web
+```
+
+Note, that in the online surveys CES19 and CES21, respondents were invited to report their job title even if their employment status was something other than having employment. That is to say, people who reported they were retired could also report their job title.
+
+This lead to some confusion. On the one hand, it lead to many cases in the `noc` file of people saying their positions were `retired police officer`.
+
+However, many, for whatever reason, did not mention they were retired in their response to the job title question. This information was unavailable to us when we coded the job titles. *As a result, many respondents who were not working will have NOC 5- or 4- digit codes. Users should make use of the employment status variable prior to the NOC codes if they want to be sure they are capturing respondents who have paid employment.*
+
+In the next section we utilize this variable to examine the distribution of employed, retired or respondents in other situations (e.g. students) and their reported occupation titles.
+
+First we recode the employment variable to something useful, matching the categories used above.
+
+```{r}
+#| label: recode-employment-2019-web
+#Recode employment variable
+ces19web %>% 
+  mutate(employment=case_when(
+    #Anything less than 4 is employed
+    cps19_employment<4 ~ "Employed",
+    #4 
+    cps19_employment ==4 ~ "Retired",
+   cps19_employment > 8 & cps19_employment<12~ "Employed",
+    13==cps19_employment~ "Other",
+    TRUE ~ "Other"
+  ))->ces19web
+#Show results of recode
+table(ces19web$employment)
+
+```
+
+```{r}
+#| label: skim-2019-web
+ces19web %>%
+  #Filter in only those who completed the PES
+  filter(pes19_consent==1) %>% 
+  #Form groups by employment status
+  group_by(employment) %>%
+  #Select only the two NOC codes
+  select(contains("NOC")) %>% 
+my_skim() %>% 
+  select(employment, skim_variable, n_missing:pct_complete) %>% 
+  arrange(employment)
+  
+```
+
+As a final diagnostic, we print a random sample of the job tiles entered (including some empty responses) and it shows the corresponding NOC21_4 and NOC21_5 codes.
+
+```{r}
+set.seed(50)
+ces19web %>% 
+  filter(pes19_consent==1) %>% 
+  select(employment, pes19_occ_text_lower, NOC21_4, NOC21_5) %>% 
+  slice_sample(n=50) %>% 
+  print(n=50)
+```
+
+This searches for some specific job titles in French and English and returns a random sample of 50 of those entries.
+
+```{r}
+#|label: ces19-show-diagnostics-of-specific-titles
+set.seed(50)
+ces19web %>% 
+  select(employment, pes19_occ_text_lower, NOC21_4, NOC21_5) %>% 
+  filter(str_detect(pes19_occ_text_lower, "carpenter|plumber|driver|nurse|doctor|teacher|electrician")) %>% 
+  slice_sample(n=50) %>% 
+  print(n=50)
+```
+
+### CES21 Web
+
+#### Import CES21 Web
+
+First, we import the CES21 data set.
+
+```{r}
+#| label: import-ces21
+ces21<-read_sav(file=here("Data/CES2021.sav"))
+```
+
+We recreate the `employment` variable.
+
+```{r}
+#| label: ces21-employment
+
+ces21 %>% 
+  mutate(employment=case_when(
+    cps21_employment< 4 ~ "Employed",
+    cps21_employment==4 ~ "Retired",
+    cps21_employment > 8 & cps21_employment<12 ~ "Employed",
+    TRUE ~ 'Other'
+  ))->ces21
+#Show the results
+table(ces21$employment)
+```
+
+Then we convert the occupation variable to lower case and merge with `noc`.
+
+```{r}
+#| label: ces21-lower-merge-with-noc
+ces21 %>% 
+  mutate(pes21_occ_text_lower=str_to_lower(pes21_occ_text)) %>% 
+  left_join(., noc, join_by("pes21_occ_text_lower"=="title"))->ces21
+
+```
+
+We filter out only the post-election respondents.
+
+```{r}
+#| label: skim-2021-web
+ces21 %>%
+  #Filter in only those who completed the PES
+  filter(pes21_consent==1) %>% 
+  #Form groups by employment status
+  group_by(employment) %>%
+  #Select only the two NOC codes
+  select(contains("NOC")) %>% 
+my_skim() %>% 
+  select(employment, skim_variable, n_missing:pct_complete) %>% 
+  arrange(employment)
+  
+```
+
+Here we show the same diagnostics as above.
+
+```{r}
+#| label: diagnostics-ces21
+set.seed(50)
+ces21 %>% 
+  filter(pes21_consent==1) %>% 
+  select(employment, pes21_occ_text_lower, NOC21_4, NOC21_5) %>% 
+  slice_sample(n=50) %>% 
+  print(n=50)
+```
+
+```{r}
+#|label: ces21-show-diagnostics-of-specific-titles
+set.seed(50)
+ces21 %>% 
+  select(employment, pes21_occ_text_lower, NOC21_4, NOC21_5) %>% 
+  filter(str_detect(pes21_occ_text_lower, "carpenter|plumber|driver|nurse|doctor|teacher|electrician")) %>% 
+  slice_sample(n=50) %>% 
+  print(n=50)
+```
+
+# Comprehensive Diagnostics
+
+This section contains a summary table of the diagnostic evaluations conducted separately above.
+
+```{r}
+#| label: comprehensive-table
+#select pes19 consent variable and NOC
+ces19web %>% 
+  select(consent=pes19_consent, contains("NOC"),
+         #Store in object ces19
+        employment)->ces19
+
+#Select ces21 consent variable and NOC variables
+ces21 %>% 
+  select(consent=pes21_consent, contains("NOC"),
+         #store in object ces21_2
+         employment)->ces21_2
+
+#Add variables showing which survey they came from 
+ces19 %>% 
+  mutate(Survey=rep("CES19Web", nrow(.)))->ces19
+ces21_2 %>% 
+  mutate(Survey=rep("CES21", nrow(.))) %>% 
+  #bind ces21-2 to ces19
+  bind_rows(ces19) %>% 
+  #filter only those rs who participated in PES
+  filter(consent==1) %>% 
+  #unselect consent
+  select(-consent) ->ces19_21
+ 
+#Now prepare ces19phone
+  ces19phone %>% 
+    #Select only employment and NOC variables
+  select(contains("NOC"), employment) %>% 
+    #Add variable indicated where responses came frpm
+mutate(Survey=rep("CES19Phone", nrow(.))) %>% 
+    #bind with ces19-21
+    bind_rows(ces19_21) %>% 
+    #form groups of survey and employ,ent
+    group_by(Survey, employment) %>%
+    #skim to report statistics
+    my_skim() %>% 
+    select(Survey, employment, skim_variable, n_missing:pct_complete) %>% 
+    arrange(Survey, employment)
+
+
+```
+
+It appears that we were much more successful at assigning NOC codes to the web surveys than to the NOC19 phone survey. It's not entirely clear why that is. To be honest, I would have expected it to be different given that a phone interviewer would have had an opportunity to ensure respondents provided a bit more clear answers.
+
+It is also clear that users should make strong use of the questions on employment status in combination with the NOC codes in the web surveys as respondents who were not employed often provided job titles, presumably from their past primary occupations. It's not hard to imagine how one might want to make use of such information, but it would be very specific use cases.
+
+
+# Export of data files
+
+Finally, we export the CES data files separately to provide to CDEM to disseminate.
+
+```{r}
+#| label: export-files
+#Export Ces19phone Stata
+ces19phone %>% 
+  write_dta(path=here("Data/ces2019_phone_noc.dta"))
+#Export Ces19phone Rdata
+ces19phone %>% 
+  save(file=here("Data/ces2019_phone_noc.rdata"))
+#Export CES19phone SPSS
+ces19phone %>% 
+  write_sav(path=here("Data/ces2019_phone_noc.sav"))
+
+#Export Ces19web Stata
+ces19web %>% 
+  write_dta(path=here("Data/ces2019_web_noc.dta"))
+#Export Ces19phone Rdata
+ces19web %>% 
+  save(file=here("Data/ces2019_web_noc.rdata"))
+#Export CES19web SPSS
+ces19web %>% 
+  write_sav(path=here("Data/ces2019_web_noc.sav"))
+
+#Export Ces21 Stata
+ces21 %>% 
+  write_dta(path=here("Data/ces2021_noc.dta"))
+#Export CES21 Rdata
+ces21 %>% 
+  save(file=here("Data/ces2021_noc.rdata"))
+#Export CES21 SPSS
+ces21 %>% 
+  write_sav(path=here("Data/ces2021_noc.sav"))
+
+```

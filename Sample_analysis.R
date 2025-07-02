@@ -7,8 +7,8 @@ library(marginaleffects)
 library(nnet)
 
 # CES_2019_web <- read_dta("Data/ces2019_web_noc.dta")
-
-# CES_2021 <- read_dta("Data/ces2021_web.dta")
+# 
+# CES_2021 <- read_dta("Data/ces2021_noc.dta")
 
 # I have stored these data files in my own personal package that is stored on GitHub. 
 #library(devtools)
@@ -118,20 +118,10 @@ CES <- CES %>%
                          ) ~ "Frictional"
   ),
   stability2 = factor(stability, levels = c("Stable Occupations", "Surplus", "Shortages")))
-# 
-# CES <- CES %>% 
-#   mutate(health_care = ifelse(NOC21_5 %in% c(137, 138, 139, 151, 153, 154,
-#                                              155, 158, 159, 160, 177, 178, 180),
-#                               1, ifelse(is.na(NOC21_5), NA, 0)),
-#          Police = ifelse(NOC21_5 %in% c(189, 202, 215), 1, ifelse(is.na(NOC21_5),
-#                                                                   NA, 0)),
-#          frontline_workers = ifelse(NOC21_5 %in% c(273, 274, 277, 278, 285, 290,
-#                                                    292, 298, 321, 322, 323), 1,
-#                                     ifelse(is.na(NOC21_5), NA, 0)
-#                                     ))
 
 
-CES$Vote_Choice
+
+
 CES <- CES %>% 
   mutate(across(c(Conf_Province, Conf_Federal, Conf_police),
                 \(x)replace(x, x == 5, NA)),
@@ -148,36 +138,36 @@ CONTROLS <- c("Age", "Gender", "Province", "Year")
 Stability <- lm(reformulate(c("stability2"), response = "Right_wing"), data = CES) 
 Stability_2 <- lm(reformulate(c("stability2", CONTROLS), response = "Right_wing"), data = CES) 
 
+library(modelsummary)
+modelsummary(list(Stability, Stability_2), stars=T)
+#stargazer::stargazer(list(Stability, Stability_2), type = "text")
 
-stargazer::stargazer(list(Stability, Stability_2), type = "text")
-
-
+library(marginaleffects)
 Stability %>% 
   avg_predictions(type = "response", by = "stability") %>% 
   as_tibble() %>% 
-  mutate(Party = case_match(group,
-                            "1" ~ "Liberal Party",
-                            "2" ~ "Conservative Party",
-                            "3" ~ "NDP",
-                            "4" ~ "Bloc Quebecois",
-                            "5" ~ "Green Party",
-                            "6" ~ "People's Party (2019 Only)",
-                            "7" ~ "Another Party"
-                            
-  ),
-  Party = factor(Party, levels = c("Liberal Party", "Conservative Party", "NDP",
-                                   "Bloc Quebecois", "Green Party", "People's Party (2019 Only)", "Another Party"))) %>%
-  filter(Party %in% c("Liberal Party", "Conservative Party", "NDP",
-                      "Bloc Quebecois", "Green Party")) %>% 
-  ggplot(aes(x = estimate, y = stability,
-             col = Party, xmin = conf.low,
+  # mutate(Party = case_match(group,
+  #                           "1" ~ "Liberal Party",
+  #                           "2" ~ "Conservative Party",
+  #                           "3" ~ "NDP",
+  #                           "4" ~ "Bloc Quebecois",
+  #                           "5" ~ "Green Party",
+  #                           "6" ~ "People's Party (2019 Only)",
+  #                           "7" ~ "Another Party"
+  #                           
+  # ),
+  # Party = factor(Party, levels = c("Liberal Party", "Conservative Party", "NDP",
+  #                                  "Bloc Quebecois", "Green Party", "People's Party (2019 Only)", "Another Party"))) %>%
+  # filter(Party %in% c("Liberal Party", "Conservative Party", "NDP",
+  #                     "Bloc Quebecois", "Green Party")) %>% 
+  ggplot(aes(x = estimate, y = stability, xmin = conf.low,
              xmax = conf.high
   )) +
   geom_point(position = position_dodge(width = 0.5)) + 
   geom_linerange(position = position_dodge(width = 0.5)) + 
   theme_bw() + geom_vline(xintercept = 0, col = "grey", lty = 4) + 
-  theme(legend.position = "bottom") + 
-  scale_color_manual(values=c("red", "darkblue", "orange", "lightblue", "green", "purple", "pink"))
+  theme(legend.position = "bottom") 
+#  scale_color_manual(values=c("red", "darkblue", "orange", "lightblue", "green", "purple", "pink"))
 
 
 Stability_df <- Stability %>% 
@@ -254,12 +244,8 @@ ggpubr::ggarrange(Stability_plot, Structural_Stability_plot, common.legend = TRU
                   nrow = 2, align = "hv", legend = "bottom") %>% 
   ggsave("plots/ocupation_stability.png", ., width = 6, height = 3)
 
-# Somehow Structural is null
-table(CES$Structural)
-structual_stability %>%  
-  stargazer::stargazer(type = "text")
 
-structual_stability %>% 
+Structual_Stability %>% 
   avg_predictions(by = c("stability", "Structural")) %>% 
   as.data.frame() %>% 
   ggplot(aes(x = estimate, xmin = conf.low, xmax = conf.high,
@@ -364,8 +350,3 @@ df %>%
   theme(legend.position = "bottom") +
   labs(x = NULL, y = NULL)
 
-table(CES$Vote_Choice)
-
-
-table(CES$Structural)
-library(modelsummary)

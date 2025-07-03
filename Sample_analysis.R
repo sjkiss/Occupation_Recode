@@ -75,6 +75,7 @@ CES_2021 <- CES_2021 %>%
          Vote_Choice = cps21_votechoice
   )
 
+
 CES <- bind_rows(CES_2021, CES_2019_web)
 
 CES <- CES %>% 
@@ -92,36 +93,35 @@ CES <- CES %>%
                                               65310, 65200, 65201, 72310, 72311, 72400, 72402,
                                               72405, 72406, 72420, 72421, 72422, 72422, 72429, 
                                               73300, 94210, 94211, 94142, 95100, 95101, 95102, 
-                                              95102, 95104, 95106, 95107
-  ) ~ "Shortages",
-  NOC21_5 %in% c(1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201,
-                 12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321) ~ "Surplus",
-  is.na(NOC21_5) ~ NA,
-  TRUE ~ "Stable Occupations"
-  ),
-  Structural = case_when(NOC21_5 %in% c(20010, 20011, 20012, 21300, 21321, 21322, 21311,
-                                        21200, 21201, 21202, 21203, 21210, 21211, 21223,
-                                        21230, 21231, 21232, 21234, 31300, 31301, 31100, 
-                                        31101, 31102, 31103, 31111, 31201, 31303, 32103,
-                                        31209, 31303, 32103, 31121, 31202, 32109, 32120,
-                                        32110, 32111, 32112, 33100, 32102, 32101, 33102,
-                                        32109, 33103, 33109, 31200, 41301, 63200, 63201,
-                                        65202, 72106, 73200, 84120, 85100, 85101, 85103, 
-                                        85102, 85120, 94141, 94142, 
-                                        1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201) ~ "Strucutral",
-                         NOC21_5 %in% c( 32104, 44101, 62020, 62200, 63100, 65200, 64100,
-                                         65310, 65200, 65201, 72310, 72311, 72400, 72402,
-                                         72405, 72406, 72420, 72421, 72422, 72422, 72429, 
-                                         73300, 94210, 94211, 94142, 95100, 95101, 95102, 
-                                         95102, 95104, 95106, 95107, 
-                                         12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321
-                         ) ~ "Frictional"
-  ),
-  stability2 = factor(stability, levels = c("Stable Occupations", "Surplus", "Shortages")))
+                                              95102, 95104, 95106, 95107) ~ "Shortages",
+                               NOC21_5 %in% c(1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201,
+                                              12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321) ~ "Surplus",
+                               is.na(NOC21_5) ~ NA,
+                               TRUE ~ "Stable Occupations"
+                               ),
+         Structural = case_when(NOC21_5 %in% c(20010, 20011, 20012, 21300, 21321, 21322, 21311,
+                                               21200, 21201, 21202, 21203, 21210, 21211, 21223,
+                                               21230, 21231, 21232, 21234, 31300, 31301, 31100, 
+                                               31101, 31102, 31103, 31111, 31201, 31303, 32103,
+                                               31209, 31303, 32103, 31121, 31202, 32109, 32120,
+                                               32110, 32111, 32112, 33100, 32102, 32101, 33102,
+                                               32109, 33103, 33109, 31200, 41301, 63200, 63201,
+                                               65202, 72106, 73200, 84120, 85100, 85101, 85103, 
+                                               85102, 85120, 94141, 94142, 
+                                               1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201) ~ "Strucutral",
+                                NOC21_5 %in% c( 32104, 44101, 62020, 62200, 63100, 65200, 64100,
+                                                65310, 65200, 65201, 72310, 72311, 72400, 72402,
+                                                72405, 72406, 72420, 72421, 72422, 72422, 72429, 
+                                                73300, 94210, 94211, 94142, 95100, 95101, 95102, 
+                                                95102, 95104, 95106, 95107, 
+                                                12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321
+                                                ) ~ "Frictional"
+                                ),
+         stability2 = factor(stability, levels = c("Stable Occupations", "Surplus", "Shortages")))
 
 
 
-
+CES$Vote_Choice
 CES <- CES %>% 
   mutate(across(c(Conf_Province, Conf_Federal, Conf_police),
                 \(x)replace(x, x == 5, NA)),
@@ -130,45 +130,124 @@ CES <- CES %>%
          Handle_healthcare = case_when(Handle_healthcare == 1 ~ 1,
                                        Handle_healthcare %in% c(2, 3, 4, 5) ~ 0,
                                        Handle_healthcare == 6 ~ NA),
-         Right_wing = ifelse(Vote_Choice %in% c(2, 6), 1, ifelse(Vote_Choice %in% c(1, 3, 4, 5), 0, NA))
-  )
+Right_wing = ifelse(Vote_Choice %in% c(2, 6), 1, ifelse(Vote_Choice %in% c(1, 3, 4, 5), 0, NA))
+)
+
 
 CONTROLS <- c("Age", "Gender", "Province", "Year")
 
 Stability <- lm(reformulate(c("stability2"), response = "Right_wing"), data = CES) 
 Stability_2 <- lm(reformulate(c("stability2", CONTROLS), response = "Right_wing"), data = CES) 
 
-library(modelsummary)
-modelsummary(list(Stability, Stability_2), stars=T)
-#stargazer::stargazer(list(Stability, Stability_2), type = "text")
+stargazer::stargazer(list(Stability, Stability_2), type = "text")
 
-library(marginaleffects)
+
 Stability %>% 
   avg_predictions(type = "response", by = "stability") %>% 
-  as_tibble() %>% 
-  # mutate(Party = case_match(group,
-  #                           "1" ~ "Liberal Party",
-  #                           "2" ~ "Conservative Party",
-  #                           "3" ~ "NDP",
-  #                           "4" ~ "Bloc Quebecois",
-  #                           "5" ~ "Green Party",
-  #                           "6" ~ "People's Party (2019 Only)",
-  #                           "7" ~ "Another Party"
-  #                           
-  # ),
-  # Party = factor(Party, levels = c("Liberal Party", "Conservative Party", "NDP",
-  #                                  "Bloc Quebecois", "Green Party", "People's Party (2019 Only)", "Another Party"))) %>%
-  # filter(Party %in% c("Liberal Party", "Conservative Party", "NDP",
-  #                     "Bloc Quebecois", "Green Party")) %>% 
-  ggplot(aes(x = estimate, y = stability, xmin = conf.low,
+as_tibble() %>% 
+  mutate(Party = case_match(group,
+                            "1" ~ "Liberal Party",
+                            "2" ~ "Conservative Party",
+                            "3" ~ "NDP",
+                            "4" ~ "Bloc Quebecois",
+                            "5" ~ "Green Party",
+                            "6" ~ "People's Party (2019 Only)",
+                           "7" ~ "Another Party"
+                            
+                            ),
+         Party = factor(Party, levels = c("Liberal Party", "Conservative Party", "NDP",
+                                          "Bloc Quebecois", "Green Party", "People's Party (2019 Only)", "Another Party"))) %>%
+  filter(Party %in% c("Liberal Party", "Conservative Party", "NDP",
+                      "Bloc Quebecois", "Green Party")) %>% 
+  ggplot(aes(x = estimate, y = stability,
+             col = Party, xmin = conf.low,
              xmax = conf.high
   )) +
   geom_point(position = position_dodge(width = 0.5)) + 
   geom_linerange(position = position_dodge(width = 0.5)) + 
   theme_bw() + geom_vline(xintercept = 0, col = "grey", lty = 4) + 
-  theme(legend.position = "bottom") 
-#  scale_color_manual(values=c("red", "darkblue", "orange", "lightblue", "green", "purple", "pink"))
+  theme(legend.position = "bottom") + 
+  scale_color_manual(values=c("red", "darkblue", "orange", "lightblue", "green", "purple", "pink"))
+  
+  
+Stability_df <- Stability %>% 
+  tidy(conf.int = TRUE) %>% 
+  filter(term %in% c("stability2Surplus", "stability2Shortages")) %>% 
+  mutate(Controls = "No Controls",
+         Model = "Labour Conditions") %>% 
+  as.data.frame() 
 
+Stability_2_df <- Stability_2 %>% 
+  tidy(conf.int = TRUE) %>% 
+  filter(term %in% c("stability2Surplus", "stability2Shortages")) %>% 
+  mutate(Controls = "Controls",
+         Model = "Labour Conditions") %>% 
+  as.data.frame()
+
+Structural_Stability <- lm(reformulate(c("stability*Structural"), response = "Right_wing"), data = CES) 
+Structural_Stability_2 <- lm(Right_wing ~ stability*Structural + Age + Gender + Province + Year, data = CES) 
+
+modelsummary::modelsummary(list(Structural_Stability, Structural_Stability_2),
+                           stars = TRUE)
+
+
+Structural_Stability_df <- slopes(Structural_Stability,
+                variable = "stability", by = "Structural") %>% 
+  mutate(Controls = "No Controls",
+         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
+  as.data.frame()
+
+Structural_Stability_2_df <-slopes(Structural_Stability_2,
+                                   variable = "stability", by = "Structural") %>% 
+  mutate(Controls = "Controls",
+         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
+  as.data.frame()
+
+Stability_df <- Stability_df %>% 
+  rbind(Stability_2_df) 
+
+
+Structural_Stability_df <-  Structural_Stability_df %>% 
+  rbind(Structural_Stability_2_df) 
+
+
+Stability_plot <- Stability_df %>% 
+  mutate(term = case_match(term, "stability2Surplus" ~ "Surplus \n (Ref. Stable Occupations)",
+                           "stability2Shortages" ~ "Shortage")) %>% 
+  ggplot(aes(x = estimate, y = term,  col = Controls,
+             shape = Controls, xmin = conf.low, xmax = conf.high)) + 
+  geom_point(position = position_dodge(width = 0.4)) +
+  geom_linerange(position = position_dodge(width = 0.4)) + 
+  facet_wrap(~Model) + 
+  geom_vline(xintercept = 0, lty = 4, col = "red") +
+  labs(x = NULL,
+       y = NULL) +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c("orange", "darkblue"))
+
+
+Structural_Stability_plot <- Structural_Stability_df  %>% 
+  ggplot(aes(x = estimate, y = Structural, col = Controls,
+             shape = Controls, xmin = conf.low, xmax = conf.high)) + 
+  geom_point(position = position_dodge(width = 0.4)) +
+  geom_linerange(position = position_dodge(width = 0.4)) + 
+  facet_wrap(~Model) + 
+  geom_vline(xintercept = 0, lty = 4, col = "red") +
+  labs(x = NULL,
+       y = NULL) +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c("orange", "darkblue"))
+
+ggpubr::ggarrange(Stability_plot, Structural_Stability_plot, common.legend = TRUE,
+                  nrow = 2, align = "hv", legend = "bottom") %>% 
+  ggsave("plots/ocupation_stability.png", ., width = 6, height = 3)
+ 
+# Somehow Structural is null
+table(CES$Structural)
+structual_stability %>%  
+  stargazer::stargazer(type = "text")
 
 Stability_df <- Stability %>% 
   tidy(conf.int = TRUE) %>% 

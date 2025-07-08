@@ -1,9 +1,5 @@
 Version: 1.0
-<<<<<<< HEAD
-ProjectId: 5849f12b-d5ce-4622-b0ba-467276e59f1f
-=======
 ProjectId: 5a9793da-60ac-4f3e-8db9-fd553e1a1dcd
->>>>>>> origin/sample_analysis
 
 RestoreWorkspace: Default
 SaveWorkspace: Default

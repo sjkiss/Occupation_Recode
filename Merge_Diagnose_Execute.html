@@ -92,7 +92,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#comprehensive-diagnostics" id="toc-comprehensive-diagnostics" class="nav-link" data-scroll-target="#comprehensive-diagnostics">Comprehensive Diagnostics</a></li>
   <li><a href="#export-of-data-files" id="toc-export-of-data-files" class="nav-link" data-scroll-target="#export-of-data-files">Export of data files</a></li>
-  <li><a href="#future-improvements" id="toc-future-improvements" class="nav-link" data-scroll-target="#future-improvements">Future improvements</a></li>
   </ul>
 </nav>
 </div>
@@ -128,12 +127,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>The purpose of this document is to document how we merged unique job titles drawn from the CES19 phone, CES19 web and CES21 surveys, coded with codes from Canada’s National Occupation Classification and to provide some diagnostics of the coding and merging. This was undertaken at the request of the Consortium on Electoral Democracy.</p>
-<p>While the initial request was for the CES21 dataset we included the 2019 surveys for two reasons. First, the CES19 surveys are closer in time to the Government of Canada’s 2021 National Occupation Classification than the 2016 NOC and, second, because of repeat entries, it was anticipated that this would not necessarily add a lot of extra work. That is to say, there are only so many ways respondents can enter the job title “nurse”, “teacher”, “carpenter”, etc.</p>
+<p>The purpose of this document is to document how we merged unique job titles drawn from the CES19 phone, CES19 web and CES21 surveys, coded with codes from Canada’s National Occupation Classification and to provide some diagnostics of the coding and merging. We undertook this at the request of the Consortium on Electoral Democracy.</p>
+<p>While the initial request was only to code the occupation responses for the CES21 dataset, we included the 2019 surveys for two reasons. First, the CES19 surveys are closer in time to the Government of Canada’s 2021 National Occupation Classification than the 2016 NOC and, second, because of repeat entries, it was anticipated that this would not necessarily add a lot of extra work. That is to say, there are only so many ways respondents can enter the job title “nurse”, “teacher”, “carpenter”, etc.</p>
 </section>
 <section id="data-import" class="level2">
 <h2 class="anchored" data-anchor-id="data-import">Data Import</h2>
-<p>First, we imported the three files containing respondents and converted each variable containing occupation and job titles into all lower-case strings. Then we filtered only unique responses. As a result, <code>Teacher</code> and <code>teacher</code> became a single entry, but spelling mistakes were kept. So, we were left with a spreadsheet containing responses such as <code>teacher</code> and <code>teahcher</code>, and, obviously <code>elementary teacher</code>. This variable was exported into an Excel spreadsheet for coding by several rules (documented elsewhere).</p>
+<p>First, we imported the three files containing respondents and converted each variable containing occupation and job titles into all lower-case strings. Then we filtered only unique responses. As a result, <code>Teacher</code> and <code>teacher</code> became a single entry, but spelling mistakes were kept. So, we were left with a spreadsheet containing responses such as <code>teacher</code> and <code>teahcher</code>, and, more specific entries such as <code>elementary teacher</code>. This variable alone was exported into an Excel spreadsheet for coding by two research assistants.</p>
 <p>Second, we imported the Excel spreadsheet that contains the unique occupation titles contained in the three surveys and the 4-digit and 5-digit NOC codes assigned by coders. More can and will be said about what the difference between the 4- and 5-digit codes, but basically it is simply that the 5-digit codes are more specific. This is an innovation in the NOC that emerged between 2016 and 2021.</p>
 <p>As an example, someone providing the response “Kindergarden Teacher” could be classed with the 5-digit NOC code 41221 - “Elementary School and Kindergarten Teachers”. However, someone providing the response “Teacher” could be plausibly be an elementary or a secondary school teacher. The latter has the 5-digit code 41220. But both share the 4-digit code 4122.</p>
 <p>But, presumably, researchers could make use of the information in the 4-digit code. As a result, after initially coding each response with a 5-digit code, we re-coded remaining responses with a 4-digit code and then copied the the first 4-digits of the 5-digit codes assigned to those in the first attempt.</p>
@@ -524,7 +523,7 @@ Employed    Other  Retired
 <h4 class="anchored" data-anchor-id="import-ces21-web">Import CES21 Web</h4>
 <p>First, we import the CES21 data set.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>ces21<span class="ot">&lt;-</span><span class="fu">read_sav</span>(<span class="at">file=</span><span class="fu">here</span>(<span class="st">"Data/CES2021.sav"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>ces21<span class="ot">&lt;-</span><span class="fu">read_sav</span>(<span class="at">file=</span><span class="fu">here</span>(<span class="st">"Data/CES2021tab.sav"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We recreate the <code>employment</code> variable.</p>
 <div class="cell">
@@ -734,28 +733,30 @@ Employed    Other  Retired
 <span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a> </span>
 <span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a><span class="co">#Now prepare ces19phone</span></span>
 <span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a>  ces19phone <span class="sc">%&gt;%</span> </span>
-<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Select only employment and NOC variables</span></span>
-<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">contains</span>(<span class="st">"NOC"</span>), employment) <span class="sc">%&gt;%</span> </span>
-<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Add variable indicated where responses came frpm</span></span>
-<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">Survey=</span><span class="fu">rep</span>(<span class="st">"CES19Phone"</span>, <span class="fu">nrow</span>(.))) <span class="sc">%&gt;%</span> </span>
-<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">#bind with ces19-21</span></span>
-<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(ces19_21) <span class="sc">%&gt;%</span> </span>
-<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">#form groups of survey and employ,ent</span></span>
-<span id="cb35-34"><a href="#cb35-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Survey, employment) <span class="sc">%&gt;%</span></span>
-<span id="cb35-35"><a href="#cb35-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">#skim to report statistics</span></span>
-<span id="cb35-36"><a href="#cb35-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">my_skim</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb35-37"><a href="#cb35-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Survey, employment, skim_variable, n_missing<span class="sc">:</span>pct_complete) <span class="sc">%&gt;%</span> </span>
-<span id="cb35-38"><a href="#cb35-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(Survey, employment)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Filter only those respondents who participated in the post-election-survey</span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(pc1<span class="sc">==</span><span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Select only employment and NOC variables</span></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">contains</span>(<span class="st">"NOC"</span>), employment) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Add variable indicated where responses came frpm</span></span>
+<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">Survey=</span><span class="fu">rep</span>(<span class="st">"CES19Phone"</span>, <span class="fu">nrow</span>(.))) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">#bind with ces19-21</span></span>
+<span id="cb35-34"><a href="#cb35-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(ces19_21) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-35"><a href="#cb35-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">#form groups of survey and employ,ent</span></span>
+<span id="cb35-36"><a href="#cb35-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Survey, employment) <span class="sc">%&gt;%</span></span>
+<span id="cb35-37"><a href="#cb35-37" aria-hidden="true" tabindex="-1"></a>    <span class="co">#skim to report statistics</span></span>
+<span id="cb35-38"><a href="#cb35-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">my_skim</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb35-39"><a href="#cb35-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Survey, employment, skim_variable, n_missing<span class="sc">:</span>pct_complete) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-40"><a href="#cb35-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(Survey, employment)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 18 × 6
    Survey     employment skim_variable n_missing valid pct_complete
    &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;             &lt;int&gt; &lt;int&gt;        &lt;dbl&gt;
- 1 CES19Phone Employed   NOC21_4            1171  1467        0.556
- 2 CES19Phone Employed   NOC21_5            1349  1289        0.489
- 3 CES19Phone Other      NOC21_4             412     0        0    
- 4 CES19Phone Other      NOC21_5             412     0        0    
- 5 CES19Phone Retired    NOC21_4             971     0        0    
- 6 CES19Phone Retired    NOC21_5             971     0        0    
+ 1 CES19Phone Employed   NOC21_4             360  1467        0.803
+ 2 CES19Phone Employed   NOC21_5             538  1289        0.706
+ 3 CES19Phone Other      NOC21_4             285     0        0    
+ 4 CES19Phone Other      NOC21_5             285     0        0    
+ 5 CES19Phone Retired    NOC21_4             777     0        0    
+ 6 CES19Phone Retired    NOC21_5             777     0        0    
  7 CES19Web   Employed   NOC21_4            1492  4208        0.738
  8 CES19Web   Employed   NOC21_5            2177  3523        0.618
  9 CES19Web   Other      NOC21_4             740   383        0.341
@@ -799,23 +800,14 @@ Employed    Other  Retired
 <span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a><span class="co">#Export Ces21 Stata</span></span>
 <span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>ces21 <span class="sc">%&gt;%</span> </span>
-<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_dta</span>(<span class="at">path=</span><span class="fu">here</span>(<span class="st">"Data/ces2021_web.dta"</span>))</span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_dta</span>(<span class="at">path=</span><span class="fu">here</span>(<span class="st">"Data/ces2021_noc.dta"</span>))</span>
 <span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a><span class="co">#Export CES21 Rdata</span></span>
 <span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>ces21 <span class="sc">%&gt;%</span> </span>
 <span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">save</span>(<span class="at">file=</span><span class="fu">here</span>(<span class="st">"Data/ces2021_noc.rdata"</span>))</span>
 <span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a><span class="co">#Export CES21 SPSS</span></span>
 <span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>ces21 <span class="sc">%&gt;%</span> </span>
-<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_sav</span>(<span class="at">path=</span><span class="fu">here</span>(<span class="st">"Data/ces2021_web_noc.sav"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_sav</span>(<span class="at">path=</span><span class="fu">here</span>(<span class="st">"Data/ces2021_noc.sav"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="future-improvements" class="level1">
-<h1>Future improvements</h1>
-<p>There has been some discussion of using Large Language Models (e.g.&nbsp;AI) to automate the process of assigning NOC codes to these job titles to minimize time and effort necessary to accomplish this. This is under investigation, although one should not assume that this will be possible. There is a great deal of ambiguity in the responses that human coders can catch. LISPOP will report back.</p>
-<p>A better strategy might be to refine the Qualtrics survey questions. Here are a few concrete suggestions:</p>
-<p>First, CDEM may wish to refine the survey flow dependent on whether or not respondents were employed or not. It is understandable why we might want to capture the major occupation of people who were retired. Occupations are powerful socializers and, even after leaving, respondents may have lingering affinities or conceptions of interests that may last. But, the question may need to be changed, (e.g.&nbsp;“What was your primary occupation?”).</p>
-<p>Second, the question soliciting occupation could be improved somewhat by prompting respondents to focus on responding with their job title. “What is your job title? Please be sure to report</p>
-<p>Third, in an ideal world, respondents could be presented with a manageable menu of options from the NOC occupation matrix. It is not clear this is feasible, at the moment, but there is some potential for this to work. Qualtrics features a “drill down” question type, where respondents select a succession of more specific categories. It’s possible a question could be structured where respondents could be asked what level of education or training usually requires, followed by which sector of the economy they work in, followed by a list of NOC codes. At each stage, respondents might only have to choose from six to twenty items, so it would be fairly manageable.</p>
-<p>LISPOP is investigating and can report back soon.</p>
 </section>
 
 </main>

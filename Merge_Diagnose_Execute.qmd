@@ -16,13 +16,13 @@ execute:
 
 ## Introduction
 
-The purpose of this document is to document how we merged unique job titles drawn from the CES19 phone, CES19 web and CES21 surveys, coded with codes from Canada's National Occupation Classification and to provide some diagnostics of the coding and merging. This was undertaken at the request of the Consortium on Electoral Democracy.
+The purpose of this document is to document how we merged unique job titles drawn from the CES19 phone, CES19 web and CES21 surveys, coded with codes from Canada's National Occupation Classification and to provide some diagnostics of the coding and merging. We undertook this at the request of the Consortium on Electoral Democracy.
 
-While the initial request was for the CES21 dataset we included the 2019 surveys for two reasons. First, the CES19 surveys are closer in time to the Government of Canada's 2021 National Occupation Classification than the 2016 NOC and, second, because of repeat entries, it was anticipated that this would not necessarily add a lot of extra work. That is to say, there are only so many ways respondents can enter the job title "nurse", "teacher", "carpenter", etc.
+While the initial request was only to code the occupation responses for the CES21 dataset, we included the 2019 surveys for two reasons. First, the CES19 surveys are closer in time to the Government of Canada's 2021 National Occupation Classification than the 2016 NOC and, second, because of repeat entries, it was anticipated that this would not necessarily add a lot of extra work. That is to say, there are only so many ways respondents can enter the job title "nurse", "teacher", "carpenter", etc.
 
 ## Data Import
 
-First, we imported the three files containing respondents and converted each variable containing occupation and job titles into all lower-case strings. Then we filtered only unique responses. As a result, `Teacher` and `teacher` became a single entry, but spelling mistakes were kept. So, we were left with a spreadsheet containing responses such as `teacher` and `teahcher`, and, obviously `elementary teacher`. This variable was exported into an Excel spreadsheet for coding by several rules (documented elsewhere).
+First, we imported the three files containing respondents and converted each variable containing occupation and job titles into all lower-case strings. Then we filtered only unique responses. As a result, `Teacher` and `teacher` became a single entry, but spelling mistakes were kept. So, we were left with a spreadsheet containing responses such as `teacher` and `teahcher`, and, more specific entries such as `elementary teacher`. This variable alone was exported into an Excel spreadsheet for coding by two research assistants.
 
 Second, we imported the Excel spreadsheet that contains the unique occupation titles contained in the three surveys and the 4-digit and 5-digit NOC codes assigned by coders. More can and will be said about what the difference between the 4- and 5-digit codes, but basically it is simply that the 5-digit codes are more specific. This is an innovation in the NOC that emerged between 2016 and 2021.
 
@@ -284,7 +284,7 @@ First, we import the CES21 data set.
 
 ```{r}
 #| label: import-ces21
-ces21<-read_sav(file=here("Data/CES2021.sav"))
+ces21<-read_sav(file=here("Data/CES2021tab.sav"))
 ```
 
 We recreate the `employment` variable.
@@ -384,6 +384,8 @@ ces21_2 %>%
  
 #Now prepare ces19phone
   ces19phone %>% 
+    #Filter only those respondents who participated in the post-election-survey
+        filter(pc1==1) %>% 
     #Select only employment and NOC variables
   select(contains("NOC"), employment) %>% 
     #Add variable indicated where responses came frpm
@@ -403,7 +405,6 @@ mutate(Survey=rep("CES19Phone", nrow(.))) %>%
 It appears that we were much more successful at assigning NOC codes to the web surveys than to the NOC19 phone survey. It's not entirely clear why that is. To be honest, I would have expected it to be different given that a phone interviewer would have had an opportunity to ensure respondents provided a bit more clear answers.
 
 It is also clear that users should make strong use of the questions on employment status in combination with the NOC codes in the web surveys as respondents who were not employed often provided job titles, presumably from their past primary occupations. It's not hard to imagine how one might want to make use of such information, but it would be very specific use cases.
-
 
 # Export of data files
 

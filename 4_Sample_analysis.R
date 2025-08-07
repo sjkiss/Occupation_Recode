@@ -8,12 +8,12 @@ library(nnet)
 
 # I have stored these data files in my own personal package that is stored on GitHub. 
 #library(devtools)
-#devtools::install_github("sjkiss/cesdata2")
+#devtools::install_github("sjkiss/cesdata2", force=T)
 library(cesdata2)
 
 CES_2019_web <- ces19web %>% 
   select(pes19_conf_inst1_2, pes19_conf_inst1_1, cps19_issue_handle_1, pes19_conf_inst2_8, 
-         pes19_age, cps19_gender, pes19_lang, cps19_province, pes19_votechoice2019,
+         pes19_age, cps19_gender, pes19_lang, cps19_province, pes19_votechoice2019,degree,
          #Would it be better if we used the NOC21_4 codes? Would we have a bigger sample size?
          NOC21_5, NOC21_4) 
 
@@ -25,44 +25,39 @@ CES_2019_web <- CES_2019_web %>%
                                pes19_age > 34 & pes19_age < 55 ~ "35-54",
                                pes19_age > 54 ~ "55+"),
          cps19_gender = ifelse(cps19_gender == 2, 1, 0),
-         pes19_votechoice2019 = replace(pes19_votechoice2019, pes19_votechoice2019 %in% c(8, 9), NA)) %>% 
+         pes19_votechoice2019 = replace(pes19_votechoice2019, pes19_votechoice2019 %in% c(8, 9), NA), 
+         Degree=as_factor(degree),
+         Province=as_factor(cps19_province)) %>% 
   rename(Conf_Province = pes19_conf_inst1_2,
          Conf_Federal = pes19_conf_inst1_1,
          Handle_healthcare = cps19_issue_handle_1, 
          Conf_Police = pes19_conf_inst2_8,
          Age = pes19_age,
          Gender = cps19_gender,
-         Province = cps19_province,
+         #Province = cps19_province,
          Vote_Choice = pes19_votechoice2019
   )
-
+table(CES_2019_web$Province)
+table(CES_2019_web$Age, useNA = "ifany")
 # Select Only Key Variables
+table(as_factor(ces21$provcode), as_factor(ces21$prov), useNA = "ifany")
 
 CES_2021 <- ces21 %>% 
   select(pes21_conf_inst1_2, pes21_conf_inst1_1, cps21_issue_handle_1, pes21_conf_inst2_6,
-         Age, cps21_genderid, Q_Language, prov, cps21_votechoice,
-         NOC21_5, NOC21_4)
-
+         age, cps21_genderid, Q_Language, provcode, cps21_votechoice,
+         NOC21_5, NOC21_4, degree)
+table(ces21$province, as_factor(ces21$prov), useNA = "ifany")
 # Clean 2021 CES 
-
+val_labels(CES_2021$prov)
+val_labels(CES_2019_web$Province)
 CES_2021 <- CES_2021 %>%  
-  mutate(Year = "2021",
+  mutate(Degree=as_factor(degree),Year = "2021",
+        Age = case_when(age < 35 ~ "18-34",
+                               age > 34 & age < 55 ~ "35-54",
+                               age > 54 ~ "55+"),
          cps21_issue_handle_1 = replace(cps21_issue_handle_1, cps21_issue_handle_1 == 6, 7),
          cps21_genderid = ifelse(cps21_genderid == 2, 1, 0),
-         prov = case_when(prov == 1 ~ 14,
-                          prov %in% c(2, 3) ~ 15,
-                          prov == 4 ~ 16,
-                          prov %in% c(5, 8) ~17,
-                          prov %in% c(6, 17) ~ 18,
-                          prov == 7 ~ 19,
-                          prov %in% c(9, 10) ~ 20,
-                          prov == 11 ~ 21,
-                          prov == 12 ~ 22,
-                          prov == 13 ~ 23,
-                          prov %in% c(14, 15) ~ 24,
-                          prov == 16 ~ 25,
-                          prov == 18 ~ 26
-         ),
+         Province = as_factor(provcode),
          cps21_votechoice = replace(cps21_votechoice, cps21_votechoice == 7, NA),
          cps21_votechoice = replace(cps21_votechoice, cps21_votechoice == 6, 7)) %>% 
   rename(Conf_Province = pes21_conf_inst1_2,
@@ -70,186 +65,65 @@ CES_2021 <- CES_2021 %>%
          Handle_healthcare = cps21_issue_handle_1,
          Conf_police = pes21_conf_inst2_6,
          Gender = cps21_genderid,
-         Province = prov,
          Vote_Choice = cps21_votechoice
   )
 
 # Merge 2019 and 2021 CES
-
+library(labelled)
+#Value labels for these are different; 
+val_labels(CES_2019_web$Vote_Choice)
+val_labels(CES_2021$Vote_Choice)
+#Convert to fators for recoding
+CES_2019_web$Vote_Choice<-as_factor(CES_2019_web$Vote_Choice)
+CES_2021$Vote_Choice<-as_factor(CES_2021$Vote_Choice)
+table(CES_2019_web$Vote_Choice)
+table(CES_2021$Vote_Choice)
+CES_2019_web$Handle_healthcare<-as_factor(CES_2019_web$Handle_healthcare)
+CES_2021$Handle_healthcare<-as_factor(CES_2021$Handle_healthcare)
 CES <- bind_rows(CES_2021, CES_2019_web)
+table(CES$Year, CES$Province)
+table(CES$Vote_Choice)
+val_labels(CES_2019_web$Province)
+#Convert in one go
 
-# Classify Jobs by stability and type of stability
-
-CES <- CES %>% 
-  mutate(stability = case_when(NOC21_5 %in% c(20010, 20011, 20012, 21300, 21321, 21322, 21311,
-                                              21200, 21201, 21202, 21203, 21210, 21211, 21223,
-                                              21230, 21231, 21232, 21234, 31300, 31301, 31100, 
-                                              31101, 31102, 31103, 31111, 31201, 31303, 32103,
-                                              31209, 31303, 32103, 31121, 31202, 32109, 32120,
-                                              32110, 32111, 32112, 33100, 32102, 32101, 33102,
-                                              32109, 33103, 33109, 31200, 41301, 63200, 63201,
-                                              65202, 72106, 73200, 84120, 85100, 85101, 85103, 
-                                              85102, 85120, 94141, 94142, 
-                                              
-                                              32104, 44101, 62020, 62200, 63100, 65200, 64100,
-                                              65310, 65200, 65201, 72310, 72311, 72400, 72402,
-                                              72405, 72406, 72420, 72421, 72422, 72422, 72429, 
-                                              73300, 94210, 94211, 94142, 95100, 95101, 95102, 
-                                              95102, 95104, 95106, 95107
-  ) ~ "Shortages",
-  NOC21_5 %in% c(1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201,
-                 12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321) ~ "Surplus",
-  is.na(NOC21_5) ~ NA,
-  TRUE ~ "Stable Occupations"
-  ),
-  Structural = case_when(NOC21_5 %in% c(20010, 20011, 20012, 21300, 21321, 21322, 21311,
-                                        21200, 21201, 21202, 21203, 21210, 21211, 21223,
-                                        21230, 21231, 21232, 21234, 31300, 31301, 31100, 
-                                        31101, 31102, 31103, 31111, 31201, 31303, 32103,
-                                        31209, 31303, 32103, 31121, 31202, 32109, 32120,
-                                        32110, 32111, 32112, 33100, 32102, 32101, 33102,
-                                        32109, 33103, 33109, 31200, 41301, 63200, 63201,
-                                        65202, 72106, 73200, 84120, 85100, 85101, 85103, 
-                                        85102, 85120, 94141, 94142, 
-                                        1411, 14112, 14300, 14301, 14110, 52100, 53100, 74102, 75201) ~ "Strucutral",
-                         NOC21_5 %in% c( 32104, 44101, 62020, 62200, 63100, 65200, 64100,
-                                         65310, 65200, 65201, 72310, 72311, 72400, 72402,
-                                         72405, 72406, 72420, 72421, 72422, 72422, 72429, 
-                                         73300, 94210, 94211, 94142, 95100, 95101, 95102, 
-                                         95102, 95104, 95106, 95107, 
-                                         12103, 72600, 72601, 72602, 72603, 72604, 64320, 64322, 64321
-                         ) ~ "Frictional"
-  ),
-  stability2 = factor(stability, levels = c("Stable Occupations", "Surplus", "Shortages")))
-
+CES %>% 
+  mutate(Vote_Choice=case_when(
+    str_detect( Vote_Choice,"ndp|NDP")~"NDP",
+    str_detect(Vote_Choice,"Liberal|liberal")~"Liberal",
+    str_detect(Vote_Choice,"Conservative")~"Conservative",
+    str_detect(Vote_Choice,"Bloc|bloc")~"BQ",
+    str_detect(Vote_Choice,"People")~"People's Party",
+    str_detect(Vote_Choice,"Green")~"Green",
+    str_detect(Vote_Choice,"know|Know")~NA_character_,
+TRUE~"Other"
+  ))->CES
+table(CES$Vote_Choice)
+CES %>% 
+  mutate(Handle_healthcare=case_when(
+    str_detect( Handle_healthcare,"ndp|NDP")~"NDP",
+    str_detect(Handle_healthcare,"Liberal|liberal")~"Liberal",
+    str_detect(Handle_healthcare,"Conservative")~"Conservative",
+    str_detect(Handle_healthcare,"Bloc|bloc")~"BQ",
+    str_detect(Handle_healthcare,"Green")~"Green",
+    str_detect(Handle_healthcare,"know|Know")~NA_character_,
+    TRUE~"Other"
+  ))->CES
+table(CES$Handle_healthcare)
+CES %>% 
+  mutate(Region=case_when(
+    str_detect(Province, "Newfo|Prince|Nova|New Brun")~"Atlantic",
+    str_detect(Province, "Quebec")~"Quebec",
+    str_detect(Province, "Ontario")~"Ontario",
+    str_detect(Province, "Manit|Sask|British|Alberta")~"West",
+  ))->CES
+CES$Region<-factor(CES$Region, levels=c("Atlantic", "Quebec", "Ontario", "West"))
 # Create a right_wing vote choice variable 
 
 CES <- CES %>% 
-  mutate(Right_wing = ifelse(Vote_Choice %in% c(2, 6), 1, ifelse(Vote_Choice %in% c(1, 3, 4, 5), 0, NA)))
-
-#### EXPLORATORY ANALYSIS MODELS ####
-
-# Create a Vector with the names of the control variables
-
-CONTROLS <- c("Age", "Gender", "Province", "Year")
-
-# Fit main models for stable occupation 
-# LPM models coefficient represents the probability of voting for a right wing candidate 
-
-Stability <- lm(reformulate(c("stability2"), response = "Right_wing"), data = CES) 
-Stability_2 <- lm(reformulate(c("stability2", CONTROLS), response = "Right_wing"), data = CES) 
-
-# Fit models with interactions for stability and and type of challenge for occupations
-
-Structural_Stability <- lm(reformulate(c("stability*Structural"), response = "Right_wing"), data = CES) 
-Structural_Stability_2 <- lm(Right_wing ~ stability*Structural + Age + Gender + Province + Year, data = CES) 
-
-# Display models
-
-modelsummary::modelsummary(list(Stability, Stability_2,
-                                Structural_Stability,
-                                Structural_Stability_2),
-                           stars = TRUE)
-
-#### CREATE FIGURE 1 ####
-
-# Create dfs of models
-Stability_df <- Stability %>% 
-  tidy(conf.int = TRUE) %>% 
-  filter(term %in% c("stability2Surplus", "stability2Shortages")) %>% 
-  mutate(Controls = "No Controls",
-         Model = "Labour Conditions") %>% 
-  as.data.frame() 
-
-Stability_2_df <- Stability_2 %>% 
-  tidy(conf.int = TRUE) %>% 
-  filter(term %in% c("stability2Surplus", "stability2Shortages")) %>% 
-  mutate(Controls = "Controls",
-         Model = "Labour Conditions") %>% 
-  as.data.frame()
-
-
-Structural_Stability_df <- slopes(Structural_Stability,
-                                  variable = "stability", by = "Structural") %>% 
-  mutate(Controls = "No Controls",
-         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
-  as.data.frame()
-
-Structural_Stability_2_df <-slopes(Structural_Stability_2,
-                                   variable = "stability", by = "Structural") %>% 
-  mutate(Controls = "Controls",
-         Model = "Marginal Effect of Having a Surplus Occupation") %>% 
-  as.data.frame()
-
-# Combine all models 
-
-Stability_df <- Stability_df %>% 
-  rbind(Stability_2_df) 
-
-
-Structural_Stability_df <-  Structural_Stability_df %>% 
-  rbind(Structural_Stability_2_df) 
-
-# Create the first panel of Figure 1
-
-Stability_plot <- Stability_df %>% 
-  mutate(term = case_match(term, "stability2Surplus" ~ "Surplus \n (Ref. Stable Occupations)",
-                           "stability2Shortages" ~ "Shortage")) %>% 
-  ggplot(aes(x = estimate, y = term,  col = Controls,
-             shape = Controls, xmin = conf.low, xmax = conf.high)) + 
-  geom_point(position = position_dodge(width = 0.4)) +
-  geom_linerange(position = position_dodge(width = 0.4)) + 
-  facet_wrap(~Model) + 
-  geom_vline(xintercept = 0, lty = 4, col = "red") +
-  labs(x = NULL,
-       y = NULL) +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  scale_color_manual(values = c("orange", "darkblue"))
-
-# Create the second panel of figure 1 
-
-Structural_Stability_plot <- Structural_Stability_df  %>% 
-  ggplot(aes(x = estimate, y = Structural, col = Controls,
-             shape = Controls, xmin = conf.low, xmax = conf.high)) + 
-  geom_point(position = position_dodge(width = 0.4)) +
-  geom_linerange(position = position_dodge(width = 0.4)) + 
-  facet_wrap(~Model) + 
-  geom_vline(xintercept = 0, lty = 4, col = "red") +
-  labs(x = NULL,
-       y = NULL) +
-  theme_bw() + 
-  theme(legend.position = "bottom") +
-  scale_color_manual(values = c("orange", "darkblue"))
-
-# Save figure 1 
-
-ggpubr::ggarrange(Stability_plot, Structural_Stability_plot, common.legend = TRUE,
-                  nrow = 2, align = "hv", legend = "bottom") %>% 
-  ggsave("plots/ocupation_stability.png", ., width = 6, height = 3)
-
-
+  mutate(Right_wing = ifelse(Vote_Choice %in% c("Conservative"), 1, ifelse(Vote_Choice %in% c("BQ", "Liberal", "NDP", "Green", "Other"), 0, NA)))
+CES %>% 
+  count(Right_wing, Year)
 ##### SAMPLE ANALYSIS USING ANOTHER TABLE ####
-
-labour_market_summary <- read.csv("Data/RLMC_CRMT_2021_2023_NOC2021.csv")
-
-labour_market_summary <- labour_market_summary %>% 
-  slice(-(1:17))
-
-labour_market_summary <- labour_market_summary %>% 
-  mutate(Recent_Labour_Market_Conditions = case_when(Recent_Labour_Market_Conditions == 
-                                                       "Moderate signs of Shortage" ~ "Shortage",
-                                                     Recent_Labour_Market_Conditions == 
-                                                       "Strong signs of Shortage" ~ "Shortage",
-                                                     Recent_Labour_Market_Conditions == 
-                                                       "Moderate signs of Surplus" ~ "Surplus",
-                                                     Recent_Labour_Market_Conditions == 
-                                                       "Strong signs of Surplus" ~ "Surplus",
-                                                     TRUE ~ Recent_Labour_Market_Conditions
-                                                     ))
-
-table(labour_market_summary$Recent_Labour_Market_Conditions)
-
 
 labour_market_summary <- read.csv("Data/RLMC_CRMT_2021_2023_NOC2021.csv")
 
@@ -301,15 +175,19 @@ job_market_conditons <- job_market_conditons %>%
   mutate(across(c(Recent_Labour_Market_Conditions, Future_Labour_Market_Conditions), \(x)replace(x, x == "N/A", NA)))
   
 CES <- left_join(CES, job_market_conditons, by = c("NOC21_5" = "Code"))
+# CES$Province
+# table(CES$Future_Labour_Market_Conditions)
+# table(CES$Recent_Labour_Market_Conditions)
+# Create a Vector with the names of the control variables
 
-table(CES$Future_Labour_Market_Conditions)
- 
-Recent_conditions <- lm(reformulate(c("Recent_Labour_Market_Conditions", "Year"), response = "Right_wing"), data = CES) 
+CES %>% 
+  count(Year, Recent_Labour_Market_Conditions,degree)
+CONTROLS <- c("Age", "Gender", "Region", "Year", "Degree")
+
+Recent_conditions<- lm(reformulate(c("Recent_Labour_Market_Conditions", "Year"), response = "Right_wing"), data = CES) 
+
 Recent_conditions_2 <- lm(reformulate(c("Recent_Labour_Market_Conditions", CONTROLS), response = "Right_wing"), data = CES) 
-
-
 modelsummary::modelsummary(list(Recent_conditions, Recent_conditions_2), stars = TRUE)
-
 
 Future_conditions <- lm(reformulate(c("Future_Labour_Market_Conditions", "Year"), response = "Right_wing"), data = CES) 
 Future_conditions_2 <- lm(reformulate(c("Future_Labour_Market_Conditions", CONTROLS), response = "Right_wing"), data = CES) 
@@ -357,7 +235,7 @@ labour_conditons_df <- labour_conditons_df %>%
   mutate(term = case_when(str_detect(term, "Shortage") ~ "Shortage",
                           str_detect(term, "Surplus") ~ "Surplus"),
          Model = factor(Model, levels = c("Recent Labour Conditions", "Future Labour Conditions")))
-
+CES %>% count(Year, Province) %>% view()
 
 labour_market_conditions_plot <- labour_conditons_df %>% 
   ggplot(aes(x = estimate, y = term, col = Controls,
@@ -371,7 +249,7 @@ labour_market_conditions_plot <- labour_conditons_df %>%
   theme_bw() + 
   theme(legend.position = "bottom") +
   scale_color_manual(values = c("orange", "darkblue"))
-
+labour_market_conditions_plot
 ggsave("plots/labour_market_conditions.png", labour_market_conditions_plot,  width = 6, height = 3)  
 
 

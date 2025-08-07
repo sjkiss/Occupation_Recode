@@ -15,8 +15,8 @@ CES_2019_web <- ces19web %>%
   select(pes19_conf_inst1_2, pes19_conf_inst1_1, cps19_issue_handle_1, pes19_conf_inst2_8, 
          pes19_age, cps19_gender, pes19_lang, cps19_province, pes19_votechoice2019,degree,
          #Would it be better if we used the NOC21_4 codes? Would we have a bigger sample size?
-         NOC21_5, NOC21_4) 
-
+         NOC21_5, NOC21_4, weight=pes19_weight_general_restricted) 
+names(CES_2019_web)
 # Clean 2019 CES 
 
 CES_2019_web <- CES_2019_web %>% 
@@ -45,11 +45,10 @@ table(as_factor(ces21$provcode), as_factor(ces21$prov), useNA = "ifany")
 CES_2021 <- ces21 %>% 
   select(pes21_conf_inst1_2, pes21_conf_inst1_1, cps21_issue_handle_1, pes21_conf_inst2_6,
          age, cps21_genderid, Q_Language, provcode, cps21_votechoice,
-         NOC21_5, NOC21_4, degree)
-table(ces21$province, as_factor(ces21$prov), useNA = "ifany")
+         NOC21_5, NOC21_4, degree, weight=pes21_weight_general_restricted)
+
 # Clean 2021 CES 
-val_labels(CES_2021$prov)
-val_labels(CES_2019_web$Province)
+
 CES_2021 <- CES_2021 %>%  
   mutate(Degree=as_factor(degree),Year = "2021",
         Age = case_when(age < 35 ~ "18-34",
@@ -120,7 +119,7 @@ CES$Region<-factor(CES$Region, levels=c("Atlantic", "Quebec", "Ontario", "West")
 # Create a right_wing vote choice variable 
 
 CES <- CES %>% 
-  mutate(Right_wing = ifelse(Vote_Choice %in% c("Conservative"), 1, ifelse(Vote_Choice %in% c("BQ", "Liberal", "NDP", "Green", "Other"), 0, NA)))
+  mutate(Right_wing = ifelse(Vote_Choice %in% c("Conservative", "People\'s Party"), 1, ifelse(Vote_Choice %in% c("BQ", "Liberal", "NDP", "Green"), 0, NA)))
 CES %>% 
   count(Right_wing, Year)
 ##### SAMPLE ANALYSIS USING ANOTHER TABLE ####
@@ -178,6 +177,11 @@ job_market_conditons <- job_market_conditons %>%
   mutate(across(c(Recent_Labour_Market_Conditions, Future_Labour_Market_Conditions), \(x)replace(x, x == "N/A", NA)))
   
 CES <- left_join(CES, job_market_conditons, by = c("NOC21_5" = "Code"))
+
+CES %>% 
+  count(Recent_Labour_Market_Conditions)
+CES %>% 
+  count(Future_Labour_Market_Conditions)
 # CES$Province
 # table(CES$Future_Labour_Market_Conditions)
 # table(CES$Recent_Labour_Market_Conditions)
@@ -187,7 +191,7 @@ CES %>%
   count(Year, Recent_Labour_Market_Conditions,degree)
 CONTROLS <- c("Age", "Gender", "Region", "Year", "Degree")
 
-Recent_conditions<- lm(reformulate(c("Recent_Labour_Market_Conditions", "Year"), response = "Right_wing"), data = CES) 
+Recent_conditions<- lm(reformulate(c("Recent_Labour_Market_Conditions", "Year"), response = "Right_wing"), data = CES, weights = weight) 
 
 Recent_conditions_2 <- lm(reformulate(c("Recent_Labour_Market_Conditions", CONTROLS), response = "Right_wing"), data = CES) 
 modelsummary::modelsummary(list(Recent_conditions, Recent_conditions_2), stars = TRUE)
@@ -205,14 +209,14 @@ Recent_conditions_df <- Recent_conditions %>%
   mutate(Controls = "No Controls",
          Model = "Recent Labour Conditions") %>% 
   as.data.frame() 
-
+Recent_conditions_df
 Recent_conditions_2_df <- Recent_conditions_2 %>% 
   tidy(conf.int = TRUE) %>% 
   filter(term %in% c("Recent_Labour_Market_ConditionsSurplus", "Recent_Labour_Market_ConditionsShortage")) %>% 
   mutate(Controls = "Controls",
          Model = "Recent Labour Conditions") %>% 
   as.data.frame()
-
+Recent_conditions_2_df
 
 Future_conditions_df <- Future_conditions %>% 
   tidy(conf.int = TRUE) %>% 
@@ -220,14 +224,14 @@ Future_conditions_df <- Future_conditions %>%
   mutate(Controls = "No Controls",
          Model = "Future Labour Conditions") %>% 
   as.data.frame() 
-
+Future_conditions_df
 Future_conditions_2_df <- Future_conditions_2 %>% 
   tidy(conf.int = TRUE) %>% 
   filter(term %in% c("Future_Labour_Market_ConditionsSurplus", "Future_Labour_Market_ConditionsShortage")) %>% 
   mutate(Controls = "Controls",
          Model = "Future Labour Conditions") %>% 
   as.data.frame()
-
+Future_conditions_2_df
 
 labour_conditons_df <- rbind(Recent_conditions_df,
                              Recent_conditions_2_df) %>% 
@@ -238,7 +242,7 @@ labour_conditons_df <- labour_conditons_df %>%
   mutate(term = case_when(str_detect(term, "Shortage") ~ "Shortage",
                           str_detect(term, "Surplus") ~ "Surplus"),
          Model = factor(Model, levels = c("Recent Labour Conditions", "Future Labour Conditions")))
-CES %>% count(Year, Province) %>% view()
+
 
 labour_market_conditions_plot <- labour_conditons_df %>% 
   ggplot(aes(x = estimate, y = term, col = Controls,

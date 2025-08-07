@@ -171,6 +171,9 @@ table(job_market_conditons$Future_Labour_Market_Conditions)
 job_market_conditons <- job_market_conditons %>% 
   mutate(Code = as.numeric(Code))
 
+job_market_conditons %>% 
+  filter(Recent_Labour_Market_Conditions == "Surplus")
+
 job_market_conditons <- job_market_conditons %>%  
   mutate(across(c(Recent_Labour_Market_Conditions, Future_Labour_Market_Conditions), \(x)replace(x, x == "N/A", NA)))
   

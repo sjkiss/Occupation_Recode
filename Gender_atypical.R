@@ -282,6 +282,7 @@ intereact_stereo_df %>%
   guides(color = guide_legend(reverse = TRUE))
 
 
+
 #### Gender Hostility ####
 
 ces21_straight <- ces21_straight %>% 
@@ -354,7 +355,7 @@ intereact_host_df %>%
   theme(legend.position = "bottom") + 
   scale_colour_manual(values = c("darkblue", "orange")) +
   geom_vline(xintercept = 0, lty = 4, col = "grey30") +
-  labs(x = "Marginal Effect of Being Employed in a Gender Atypical/Stereotypical Role \n on Marriage Prospects by Gender",
+  labs(x = "Marginal Effect of Being Employed in a Gender Atypical/Stereotypical Role \n on Hostility Towards Women",
        y = NULL) + 
   guides(color = guide_legend(reverse = TRUE))
 
@@ -450,7 +451,7 @@ intereact_gendered_df %>%
   theme(legend.position = "bottom") + 
   scale_colour_manual(values = c("darkblue", "orange")) +
   geom_vline(xintercept = 0, lty = 4, col = "grey30") +
-  labs(x = "Marginal Effect of Being Employed in a Gender Atypical/Stereotypical Role \n on Marriage Prospects by Gender",
+  labs(x = "Marginal Effect of Being Employed in a Gender Atypical/Stereotypical Role \n on Feelings of Femininity and Masculinity by Gender",
        y = NULL) + 
   guides(color = guide_legend(reverse = TRUE))
 
